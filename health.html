@@ -313,6 +313,12 @@ hr.soft{border:none;border-top:1px solid var(--line);margin:14px 0;}
     </div>
 
     <div class="card">
+      <h3>📅 週ごとの平均</h3>
+      <p style="font-size:11px;color:var(--sub);margin:0 0 10px;">最初に記録した日を1週目の始まりとして計算します。今週分はまだ記録の途中でも、その時点までの平均が表示されます。</p>
+      <div id="weight-week-list"><div class="empty">まだ記録がありません</div></div>
+    </div>
+
+    <div class="card">
       <h3>記録一覧</h3>
       <div id="weight-list"><div class="empty">まだ記録がありません</div></div>
     </div>
@@ -673,6 +679,47 @@ function cumulativeCalorieBalance(){
   });
   return {cumulative, countedDays};
 }
+let expandedWeightWeeks = new Set();
+function toggleWeightWeek(weekIdx){
+  if(expandedWeightWeeks.has(weekIdx)) expandedWeightWeeks.delete(weekIdx);
+  else expandedWeightWeeks.add(weekIdx);
+  renderWeightWeeklyAverages(sortByDate(db.weight));
+}
+function renderWeightWeeklyAverages(sorted){
+  const listEl = document.getElementById('weight-week-list');
+  if(!sorted.length){ listEl.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
+  const startDate = sorted[0].date;
+  const today = todayStr();
+  const groups = {};
+  sorted.forEach(x=>{
+    const weekIdx = Math.floor(daysBetween(startDate, x.date)/7);
+    if(!groups[weekIdx]) groups[weekIdx] = [];
+    groups[weekIdx].push(x);
+  });
+  const weekIndexes = Object.keys(groups).map(Number).sort((a,b)=>b-a);
+  listEl.innerHTML = weekIndexes.map(weekIdx=>{
+    const entries = groups[weekIdx];
+    const rangeStart = addDays(startDate, weekIdx*7);
+    const rangeEnd = addDays(startDate, weekIdx*7+6);
+    const isCurrent = today >= rangeStart && today <= rangeEnd;
+    const avg = entries.reduce((s,x)=>s+x.weight,0)/entries.length;
+    const label = `第${weekIdx+1}週　${fmtDate(rangeStart)}〜${fmtDate(rangeEnd)}${isCurrent?'（今週）':''}`;
+    const open = expandedWeightWeeks.has(weekIdx);
+    const items = [...entries].reverse().map(x=>`
+      <div class="log-item">
+        <span>${fmtDate(x.date)}　<b>${x.weight}kg</b></span>
+        <span><button class="del edit-btn" onclick="editWeight('${x.date}')">✏️</button><button class="del" onclick="deleteWeight('${x.date}')">✕</button></span>
+      </div>`).join('');
+    return `
+    <div class="day-group">
+      <div class="day-group-header ${open?'open':''}" onclick="toggleWeightWeek(${weekIdx})">
+        <span>${label}　平均${avg.toFixed(1)}kg</span>
+        <span class="chev">▸</span>
+      </div>
+      <div class="day-group-body ${open?'open':''}">${items}</div>
+    </div>`;
+  }).join('');
+}
 function renderWeight(){
   const sorted = sortByDate(db.weight);
   const listEl = document.getElementById('weight-list');
@@ -685,6 +732,7 @@ function renderWeight(){
       </div>`).join('');
   }
   drawLineChart('chart-weight', sorted.map(x=>fmtDate(x.date)), sorted.map(x=>x.weight), '体重(kg)', '#B8A9DC');
+  renderWeightWeeklyAverages(sorted);
 
   const actualLossEl = document.getElementById('w-actual-loss');
   const actualLossSubEl = document.getElementById('w-actual-loss-sub');
