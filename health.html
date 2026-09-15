@@ -107,6 +107,12 @@ button.secondary{
   font-size:13px;font-weight:700;border:none;cursor:pointer;
 }
 .chip.active{background:var(--ink);color:#fff;}
+.chip-wrap{display:inline-flex;align-items:center;background:var(--lav-soft);border-radius:20px;overflow:hidden;}
+.chip-wrap .chip{background:none;border-radius:0;padding-right:6px;}
+.chip-wrap .chip-remove{
+  background:none;border:none;color:var(--sub);font-size:11px;cursor:pointer;
+  padding:8px 10px 8px 2px;filter:grayscale(1) opacity(0.6);
+}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .cal-title{font-family:'Zen Maru Gothic';font-weight:700;font-size:15px;}
 .cal-nav{
@@ -512,6 +518,7 @@ function defaultData(){
     weight: [],
     meals: [],
     exerciseLogs: [],
+    hiddenExerciseChips: [],
     poop: [],
     period: { logs:[] },
     diary: [],
@@ -929,10 +936,25 @@ const praiseWords = [
 function fillExerciseName(name){
   document.getElementById('e-name').value = name;
 }
+function removeExerciseChip(name){
+  if(!db.hiddenExerciseChips) db.hiddenExerciseChips = [];
+  if(!db.hiddenExerciseChips.includes(name)) db.hiddenExerciseChips.push(name);
+  save();
+  renderExerciseChips();
+}
 function renderExerciseChips(){
-  const names = [...new Set(db.exerciseLogs.map(e=>e.name).filter(Boolean))].slice(-8).reverse();
+  const hidden = db.hiddenExerciseChips || [];
+  const names = [...new Set(db.exerciseLogs.map(e=>e.name).filter(Boolean))]
+    .filter(n=>!hidden.includes(n))
+    .slice(-8).reverse();
   const chips = document.getElementById('exercise-chips');
-  chips.innerHTML = names.length ? names.map(n=>`<button type="button" class="chip" onclick="fillExerciseName('${n.replace(/'/g,"\\'")}')">${n}</button>`).join('') : '';
+  chips.innerHTML = names.length ? names.map(n=>{
+    const safe = n.replace(/'/g,"\\'");
+    return `<span class="chip-wrap">
+      <button type="button" class="chip" onclick="fillExerciseName('${safe}')">${n}</button>
+      <button type="button" class="chip-remove" onclick="removeExerciseChip('${safe}')">✕</button>
+    </span>`;
+  }).join('') : '';
 }
 let editingExerciseIdx = null;
 function addExercise(){
