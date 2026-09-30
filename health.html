@@ -244,14 +244,17 @@ hr.soft{border:none;border-top:1px solid var(--line);margin:14px 0;}
     <div id="cycle-alert"></div>
 
     <div class="card">
-      <h3>📌 今日のようす</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 style="margin:0;">📌 今日のようす</h3>
+        <div id="h-dietday" style="background:var(--sage-soft);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:900;">ダイエット --日目</div>
+      </div>
       <div class="stat-grid">
         <div class="stat-box l"><div class="lbl">今日の体重</div><div class="val" id="h-weight">-- kg</div></div>
-        <div class="stat-box r" onclick="switchView('meal')" style="cursor:pointer;"><div class="lbl">今日の摂取</div><div class="val" id="h-meal">-- kcal</div></div>
+        <div class="stat-box l"><div class="lbl">TDEE</div><div class="val" id="h-tdee">-- kcal</div></div>
       </div>
       <div class="stat-grid" style="margin-top:10px;">
-        <div class="stat-box"><div class="lbl">基礎代謝(BMR)</div><div class="val" id="h-bmr" style="font-size:17px;">-- kcal</div></div>
-        <div class="stat-box l"><div class="lbl">TDEE</div><div class="val" id="h-tdee" style="font-size:17px;">-- kcal</div></div>
+        <div class="stat-box r" onclick="switchView('meal')" style="cursor:pointer;"><div class="lbl">今日の摂取</div><div class="val" id="h-meal">-- kcal</div></div>
+        <div class="stat-box"><div class="lbl">基礎代謝(BMR)</div><div class="val" id="h-bmr">-- kcal</div></div>
       </div>
       <div style="margin-top:10px;background:var(--butter-soft);border-radius:16px;padding:12px 14px;">
         <div class="lbl" style="font-size:11.5px;color:var(--sub);font-weight:700;">目標ゾーン（基礎代謝〜TDEE）との差</div>
@@ -298,22 +301,11 @@ hr.soft{border:none;border-top:1px solid var(--line);margin:14px 0;}
     </div>
 
     <div class="card">
-      <div class="stat-grid">
-        <div class="stat-box l">
-          <div class="lbl">🏁 スタートから</div>
-          <div class="val" id="w-actual-loss" style="font-size:22px;">-- kg</div>
-        </div>
-        <div class="stat-box r">
-          <div class="lbl">🔥 累計カロリー収支</div>
-          <div class="val" id="w-cumulative" style="font-size:20px;">-- kcal</div>
-        </div>
+      <div class="stat-box l">
+        <div class="lbl">🏁 スタートから</div>
+        <div class="val" id="w-actual-loss" style="font-size:22px;">-- kg</div>
       </div>
       <p style="font-size:11.5px;color:var(--sub);margin:10px 2px 0;" id="w-actual-loss-sub">体重を記録すると表示されます</p>
-      <p style="font-size:11.5px;color:var(--sub);margin:4px 2px 0;" id="w-cumulative-sub">食事を記録した日ごとに、その日のTDEEとの差を足し合わせた理論値です。</p>
-      <div style="margin-top:10px;background:var(--lav-soft);border-radius:16px;padding:12px 14px;">
-        <div class="lbl" style="font-size:11.5px;color:var(--sub);font-weight:700;">理論上の体重（最初の記録から計算）</div>
-        <div id="w-theoretical" style="margin-top:4px;font-size:20px;font-weight:900;">--</div>
-      </div>
     </div>
 
     <div class="card">
@@ -807,33 +799,6 @@ function renderWeight(){
     actualLossEl.textContent = '-- kg';
     actualLossSubEl.textContent = '体重を記録すると表示されます';
   }
-
-  const {cumulative, countedDays} = cumulativeCalorieBalance();
-  const cumEl = document.getElementById('w-cumulative');
-  const subEl = document.getElementById('w-cumulative-sub');
-  if(countedDays > 0){
-    const sign = cumulative >= 0 ? '-' : '+';
-    cumEl.textContent = `${sign}${Math.abs(Math.round(cumulative)).toLocaleString()} kcal`;
-    cumEl.style.color = cumulative >= 0 ? 'var(--sage)' : 'var(--rose)';
-    const fatKg = cumulative/7200;
-    subEl.textContent = `食事を記録した${countedDays}日分の合計（理論上 約${fatKg>=0?'-':'+'}${Math.abs(fatKg).toFixed(2)}kg分の脂肪変化）`;
-  }else{
-    cumEl.textContent = '-- kcal';
-    cumEl.style.color = 'var(--ink)';
-    subEl.textContent = '体重と食事を記録すると計算できます';
-  }
-
-  const theoreticalEl = document.getElementById('w-theoretical');
-  if(sorted.length && countedDays > 0){
-    const firstWeight = sorted[0].weight;
-    const fatKg = cumulative/7200;
-    const theoreticalWeight = firstWeight - fatKg;
-    theoreticalEl.textContent = `${theoreticalWeight.toFixed(2)} kg（最初の記録：${firstWeight}kg）`;
-  }else if(sorted.length){
-    theoreticalEl.textContent = `${sorted[0].weight} kg（最初の記録・食事記録がまだありません）`;
-  }else{
-    theoreticalEl.textContent = '体重を記録すると計算できます';
-  }
 }
 
 /* ---------------- MEAL ---------------- */
@@ -909,6 +874,8 @@ function renderMeal(){
     listEl.innerHTML = monthKeys.map(mk=>{
       const monthEntries = months[mk];
       const totalKcal = monthEntries.reduce((s,m)=>s+(m.kcal||0),0);
+      const dayCount = new Set(monthEntries.map(m=>m.date)).size;
+      const avgKcal = dayCount ? Math.round(totalKcal/dayCount) : 0;
       const monthOpen = expandedMealMonths.has(mk);
       const dates = [...new Set(monthEntries.map(m=>m.date))].sort((a,b)=>b.localeCompare(a));
       const dayHtml = dates.map(date=>{
@@ -935,7 +902,7 @@ function renderMeal(){
       return `
       <div class="day-group">
         <div class="day-group-header ${monthOpen?'open':''}" onclick="toggleMealMonth('${mk}')">
-          <span>${monthLabel(mk)}　${monthEntries.length}件・${totalKcal}kcal</span>
+          <span>${monthLabel(mk)}　${dayCount}日分・平均${avgKcal}kcal/日</span>
           <span class="chev">▸</span>
         </div>
         <div class="day-group-body ${monthOpen?'open':''}">${dayHtml}</div>
@@ -1498,8 +1465,11 @@ function periodRangesForCalendar(){
 }
 
 /* ---------------- HOME ---------------- */
+const DIET_START = '2026-09-03';
 function renderHome(){
   const today = todayStr();
+  const dayNum = Math.round((new Date(today+'T00:00:00') - new Date(DIET_START+'T00:00:00'))/86400000) + 1;
+  document.getElementById('h-dietday').textContent = dayNum>=1 ? `ダイエット ${dayNum}日目` : `スタートまであと${1-dayNum}日`;
   const bmr = calcBMR();
   const tdee = calcTDEE();
   const mealKcal = mealsOnDate(today).reduce((s,m)=>s+(m.kcal||0),0);
