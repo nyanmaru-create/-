@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3人の旅わりかん</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: やさしくて可愛い、旅の相棒みたいな手帳
+IDEA: 旅先でもらうレシートと、ころんとした3人のおまんじゅう顔
+PICTURE: 一番上に「精算カード」:3人の丸い顔と、誰が誰にいくら渡すかの矢印
+COLOUR and TYPE: いちごミルクのピンク地、ミントとレモンを差し色、Zen Maru Gothic
+LAYOUT: 精算カード → 入力フォーム → レシート風の支払いリスト、1カラム
+*/
+:root{color-scheme:light dark;
+--bg:light-dark(#ffe4ec,#2a1a22);--card:light-dark(#fff,#3a2530);--ink:light-dark(#3b2433,#ffe9f0);
+--soft:light-dark(#8a6a7c,#d3b3c3);--line:light-dark(#f6c9d7,#5a3a4a);--accent:light-dark(#ff5c8a,#ff7ea2);
+--kei:#ff8fb1;--moc:#6fd6b5;--moe:#ffc94d;--shadow:light-dark(0 6px 0 #f5b8ca,0 6px 0 #1c1016)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Zen Maru Gothic",system-ui,sans-serif;overflow-x:clip;
+background-image:radial-gradient(light-dark(#fff3,#fff1) 2px,transparent 2.5px);background-size:22px 22px}
+.wrap{max-width:560px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:30px;line-height:1.1;margin:6px 0 4px;font-weight:900;text-wrap:balance}
+.sub{color:var(--soft);margin:0 0 18px;font-size:14px}
+.card{background:var(--card);border-radius:24px;padding:20px;box-shadow:var(--shadow);margin-bottom:22px}
+h2{font-size:19px;margin:0 0 12px;font-weight:900}
+.faces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.face svg{width:72px;height:72px;display:block;margin:0 auto 4px}
+.face b{display:block;font-size:15px}
+.face small{display:block;color:var(--soft);font-size:13px;line-height:1.4}
+.yen{white-space:nowrap;font-variant-numeric:tabular-nums}
+.total{display:flex;justify-content:space-between;align-items:baseline;border-top:2px dashed var(--line);margin-top:16px;padding-top:12px}
+.total .yen{font-size:clamp(26px,8vw,34px);font-weight:900}
+.pay{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px}
+.pay li{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:16px;padding:10px 12px;flex-wrap:wrap}
+.pay .arrow{color:var(--accent);font-weight:900}
+.pay .amt{margin-left:auto;font-weight:900;font-size:20px}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:4px}
+.even{text-align:center;color:var(--soft);margin:14px 0 0}
+label.f{display:block;font-weight:700;font-size:14px;margin:14px 0 6px}
+input[type=text],input[type=number],input[type=date]{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);
+border:2px solid transparent;border-radius:14px;padding:11px 14px;min-height:46px}
+input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-weight:700;font-size:15px;min-height:44px;padding:8px 16px;border-radius:999px;border:2px solid var(--line);
+background:transparent;color:var(--ink);cursor:pointer}
+.chip[aria-pressed=true]{background:var(--c);border-color:var(--c);color:#3b2433}
+.row2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px}
+.btns{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{font:inherit;font-weight:900;font-size:16px;min-height:48px;padding:10px 22px;border-radius:999px;border:0;cursor:pointer;
+background:var(--accent);color:#fff;box-shadow:0 4px 0 light-dark(#d9406c,#a83a5a);flex:1}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:none;border:2px solid var(--line);flex:0 0 auto}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.err{color:var(--accent);font-size:14px;margin:8px 0 0;min-height:1em}
+.receipt{background:var(--card);border-radius:6px;padding:18px 18px 26px;position:relative;box-shadow:var(--shadow);
+-webkit-mask:radial-gradient(circle 8px at 50% 100%,#0000 98%,#000) 0 0/22px 100% repeat-x;mask:radial-gradient(circle 8px at 50% 100%,#0000 98%,#000) 0 0/22px 100% repeat-x}
+.receipt h2{text-align:center;letter-spacing:.05em}
+.filters{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.filters .chip{min-height:38px;font-size:13px;padding:4px 12px}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:12px 4px;border-bottom:2px dotted var(--line);cursor:pointer;border-radius:8px}
+.item:hover{background:var(--bg)}
+.item .who{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:13px;color:#3b2433}
+.item .what{font-weight:700;overflow-wrap:anywhere}
+.item .meta{grid-column:2/4;color:var(--soft);font-size:13px;margin-top:-4px}
+.item .yen{font-weight:900;font-size:17px}
+.empty{text-align:center;color:var(--soft);padding:24px 0}
+.status{font-size:13px;color:var(--soft);text-align:center;margin:-8px 0 16px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:var(--bg);
+padding:10px 12px 10px 18px;border-radius:999px;display:flex;gap:10px;align-items:center;transition:transform .25s;z-index:9;max-width:92vw}
+.toast.on{transform:translateX(-50%)}
+.toast button{font:inherit;font-weight:900;background:var(--accent);color:#fff;border:0;border-radius:999px;padding:6px 14px;min-height:36px;cursor:pointer}
+dialog{border:0;border-radius:24px;padding:22px;background:var(--card);color:var(--ink);max-width:340px;width:90vw}
+dialog::backdrop{background:#3b243380}
+@media(prefers-reduced-motion:reduce){.toast{transition:none}.bob{animation:none!important}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.bob{animation:bob 2.4s ease-in-out infinite}
+.face:nth-child(2) .bob{animation-delay:.3s}.face:nth-child(3) .bob{animation-delay:.6s}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>3人の旅わりかん</h1>
+  <p class="sub">けいが立て替えた分も、誰かが出した分も、ぜんぶここにメモ。</p>
+  <p class="status" id="status">読み込み中…</p>
+
+  <section class="card" aria-labelledby="h-sum">
+    <h2 id="h-sum">精算</h2>
+    <div class="faces" id="faces"></div>
+    <ul class="pay" id="pay"></ul>
+    <div class="total"><span>旅の合計</span><span class="yen" id="total">¥0</span></div>
+    <div class="btns"><button class="btn ghost" id="copy" type="button" style="flex:1">精算結果をコピー</button></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-form">
+    <h2 id="h-form">支払いを追加</h2>
+    <form id="form" autocomplete="off">
+      <label class="f" for="what">何に払った?</label>
+      <input type="text" id="what" placeholder="例:ホテル代、ランチ、ガソリン" maxlength="40">
+      <div class="row2">
+        <div><label class="f" for="amt">金額(円)</label>
+          <input type="number" id="amt" inputmode="numeric" min="1" step="1" placeholder="3000"></div>
+        <div><label class="f" for="date">日付</label>
+          <input type="date" id="date"></div>
+      </div>
+      <label class="f" id="l-payer">払った人</label>
+      <div class="chips" id="payer" role="group" aria-labelledby="l-payer"></div>
+      <label class="f" id="l-split">割る人(自分の分だけのお土産とかは外してね)</label>
+      <div class="chips" id="split" role="group" aria-labelledby="l-split"></div>
+      <p class="err" id="err" role="alert"></p>
+      <div class="btns">
+        <button class="btn ghost" type="button" id="cancel" hidden>やめる</button>
+        <button class="btn ghost" type="button" id="del" hidden>削除</button>
+        <button class="btn" type="submit" id="save">追加する</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="receipt" aria-labelledby="h-list">
+    <h2 id="h-list">支払いメモ</h2>
+    <div class="filters" id="filters"></div>
+    <div id="list"></div>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status"><span id="toastMsg"></span><button type="button" id="undo">元に戻す</button></div>
+
+<script>
+{
+const P=[{id:"kei",name:"けい",c:"var(--kei)",hex:"#ff8fb1"},{id:"moc",name:"もっちゃん",c:"var(--moc)",hex:"#6fd6b5"},{id:"moe",name:"萌",c:"var(--moe)",hex:"#ffc94d"}];
+const byId=Object.fromEntries(P.map(p=>[p.id,p]));
+const $=s=>document.querySelector(s);
+const yen=n=>"¥"+Math.round(n).toLocaleString("ja-JP");
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let items=[],db=null,col=null,useLocal=false,editId=null,payer="kei",split=new Set(P.map(p=>p.id)),filter="all",lastDeleted=null,toastT=0;
+
+const face=(p,mood)=>`<svg viewBox="0 0 80 80" class="bob" aria-hidden="true">
+<ellipse cx="40" cy="72" rx="24" ry="4" fill="#0002"/>
+<path d="M10 46c0-20 13-34 30-34s30 14 30 34c0 14-13 22-30 22S10 60 10 46z" fill="${p.hex}"/>
+<path d="M18 40c2-14 11-22 22-22" stroke="#fff8" stroke-width="5" fill="none" stroke-linecap="round"/>
+<circle cx="29" cy="44" r="3.4" fill="#3b2433"/><circle cx="51" cy="44" r="3.4" fill="#3b2433"/>
+<ellipse cx="22" cy="52" rx="5" ry="3" fill="#ff5c8a55"/><ellipse cx="58" cy="52" rx="5" ry="3" fill="#ff5c8a55"/>
+${mood>0?'<path d="M34 51q6 6 12 0" stroke="#3b2433" stroke-width="2.6" fill="none" stroke-linecap="round"/>':mood<0?'<ellipse cx="40" cy="53" rx="3.5" ry="3" fill="#3b2433"/>':'<path d="M35 52h10" stroke="#3b2433" stroke-width="2.6" stroke-linecap="round"/>'}
+</svg>`;
+
+function calc(){
+  const paid={},share={};P.forEach(p=>{paid[p.id]=0;share[p.id]=0});
+  let total=0;
+  for(const it of items){
+    const s=(it.split||[]).filter(x=>byId[x]);if(!s.length||!byId[it.payer])continue;
+    total+=it.amount;paid[it.payer]+=it.amount;
+    s.forEach(x=>share[x]+=it.amount/s.length);
+  }
+  const bal=P.map(p=>({id:p.id,v:paid[p.id]-share[p.id]}));
+  const cred=bal.filter(b=>b.v>0.5).map(b=>({...b})).sort((a,b)=>b.v-a.v);
+  const debt=bal.filter(b=>b.v<-0.5).map(b=>({id:b.id,v:-b.v})).sort((a,b)=>b.v-a.v);
+  const tr=[];let i=0,j=0;
+  while(i<debt.length&&j<cred.length){
+    const m=Math.min(debt[i].v,cred[j].v);
+    if(Math.round(m)>0)tr.push({from:debt[i].id,to:cred[j].id,amt:Math.round(m)});
+    debt[i].v-=m;cred[j].v-=m;if(debt[i].v<0.5)i++;if(cred[j].v<0.5)j++;
+  }
+  return{paid,share,total,tr,bal:Object.fromEntries(bal.map(b=>[b.id,b.v]))};
+}
+
+function renderSum(){
+  const r=calc();
+  $("#faces").innerHTML=P.map(p=>`<div class="face">${face(p,r.bal[p.id]>0.5?1:r.bal[p.id]<-0.5?-1:0)}<b>${p.name}</b>
+<small>払った <span class="yen">${yen(r.paid[p.id])}</span><br>負担分 <span class="yen">${yen(r.share[p.id])}</span></small></div>`).join("");
+  $("#pay").innerHTML=r.tr.length?r.tr.map(t=>`<li><span><span class="dot" style="background:${byId[t.from].c}"></span>${byId[t.from].name}</span>
+<span class="arrow" aria-label="から">→</span><span><span class="dot" style="background:${byId[t.to].c}"></span>${byId[t.to].name}</span>
+<span class="amt yen">${yen(t.amt)}</span></li>`).join(""):"";
+  if(!r.tr.length)$("#pay").innerHTML=`<li style="justify-content:center;color:var(--soft)">${items.length?"いまは貸し借りなし":"支払いを追加すると、ここに精算が出るよ"}</li>`;
+  $("#total").textContent=yen(r.total);
+  return r;
+}
+
+function renderList(){
+  $("#filters").innerHTML=[{id:"all",name:"ぜんぶ",c:"var(--accent)"},...P].map(p=>`<button type="button" class="chip" style="--c:${p.c}" data-f="${p.id}" aria-pressed="${filter===p.id}">${p.id==="all"?"ぜんぶ":p.name+"が払った"}</button>`).join("");
+  const list=items.filter(it=>filter==="all"||it.payer===filter).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.ts||0)-(a.ts||0));
+  if(!list.length){$("#list").innerHTML=`<p class="empty">${items.length?"この人の支払いはまだないよ":"まだメモがないよ。上から追加してね"}</p>`;return}
+  $("#list").innerHTML=list.map(it=>{const p=byId[it.payer]||P[0];const s=(it.split||[]);
+    const sp=s.length===3?"3人で割る":s.map(x=>byId[x]?.name).join("・")+"で割る";
+    return `<div class="item" tabindex="0" role="button" data-id="${esc(it.id)}" aria-label="${esc(it.what)}を編集">
+<span class="who" style="background:${p.c}">${esc(p.name.slice(0,1))}</span>
+<span class="what">${esc(it.what)}</span><span class="yen">${yen(it.amount)}</span>
+<span class="meta">${it.date?esc(it.date.slice(5).replace("-","/"))+" ・ ":""}${esc(p.name)}が払った ・ ${esc(sp)}</span></div>`}).join("");
+}
+
+function renderChips(){
+  $("#payer").innerHTML=P.map(p=>`<button type="button" class="chip" style="--c:${p.c}" data-p="${p.id}" aria-pressed="${payer===p.id}">${p.name}</button>`).join("");
+  $("#split").innerHTML=P.map(p=>`<button type="button" class="chip" style="--c:${p.c}" data-s="${p.id}" aria-pressed="${split.has(p.id)}">${p.name}</button>`).join("");
+}
+function render(){renderSum();renderList();renderChips()}
+
+function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function resetForm(){editId=null;$("#what").value="";$("#amt").value="";$("#date").value=today();payer="kei";split=new Set(P.map(p=>p.id));
+  $("#save").textContent="追加する";$("#cancel").hidden=true;$("#del").hidden=true;$("#h-form").textContent="支払いを追加";$("#err").textContent="";renderChips()}
+function loadForm(it){editId=it.id;$("#what").value=it.what;$("#amt").value=it.amount;$("#date").value=it.date||today();payer=it.payer;split=new Set(it.split);
+  $("#save").textContent="保存する";$("#cancel").hidden=false;$("#del").hidden=false;$("#h-form").textContent="支払いを編集";$("#err").textContent="";renderChips();
+  $("#h-form").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"})}
+
+function saveLocal(){if(!useLocal)return;try{localStorage.setItem("warikan3",JSON.stringify(items))}catch(e){}}
+async function put(it){
+  if(col){await col.doc(it.id).set({what:it.what,amount:it.amount,date:it.date,payer:it.payer,split:it.split,ts:it.ts})}
+  else{const k=items.findIndex(x=>x.id===it.id);k>=0?items[k]=it:items.push(it);saveLocal();render()}
+}
+async function remove(id){
+  if(col){await col.doc(id).delete()}else{items=items.filter(x=>x.id!==id);saveLocal();render()}
+}
+const newId=()=>"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+function toast(msg,undo){$("#toastMsg").textContent=msg;$("#undo").hidden=!undo;$("#toast").classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>$("#toast").classList.remove("on"),5000)}
+
+$("#form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const what=$("#what").value.trim(),amount=Math.round(Number($("#amt").value));
+  if(!what){$("#err").textContent="何に払ったか書いてね";$("#what").focus();return}
+  if(!(amount>0)){$("#err").textContent="金額を入れてね";$("#amt").focus();return}
+  if(!split.size){$("#err").textContent="割る人を1人以上選んでね";return}
+  const it={id:editId||newId(),what,amount,date:$("#date").value||today(),payer,split:P.map(p=>p.id).filter(x=>split.has(x)),ts:Date.now()};
+  const was=editId;
+  try{await put(it);toast(was?"保存したよ":"追加したよ",false);resetForm()}
+  catch(er){$("#err").textContent=er&&er.code==="quota_exceeded"?"保存できる上限に達したみたい":"保存できなかった。もう一度試してね"}
+});
+$("#cancel").addEventListener("click",resetForm);
+$("#del").addEventListener("click",async()=>{
+  const it=items.find(x=>x.id===editId);if(!it)return;
+  lastDeleted={...it};try{await remove(it.id);resetForm();toast(`「${it.what}」を削除したよ`,true)}catch(e){$("#err").textContent="削除できなかった"}
+});
+$("#undo").addEventListener("click",async()=>{if(!lastDeleted)return;const it=lastDeleted;lastDeleted=null;try{await put(it);toast("元に戻したよ",false)}catch(e){}});
+document.addEventListener("click",e=>{
+  const p=e.target.closest("[data-p]");if(p){payer=p.dataset.p;renderChips();return}
+  const s=e.target.closest("[data-s]");if(s){const id=s.dataset.s;split.has(id)?split.delete(id):split.add(id);renderChips();return}
+  const f=e.target.closest("[data-f]");if(f){filter=f.dataset.f;renderList();return}
+  const it=e.target.closest(".item");if(it){const x=items.find(i=>i.id===it.dataset.id);if(x)loadForm(x)}
+});
+document.addEventListener("keydown",e=>{const it=e.target.closest&&e.target.closest(".item");if(it&&(e.key==="Enter"||e.key===" ")){e.preventDefault();it.click()}});
+$("#copy").addEventListener("click",async()=>{
+  const r=calc();
+  const lines=["【旅のわりかん】","合計 "+yen(r.total),...P.map(p=>`${p.name}:払った ${yen(r.paid[p.id])} / 負担 ${yen(r.share[p.id])}`),"",
+    ...(r.tr.length?r.tr.map(t=>`${byId[t.from].name} → ${byId[t.to].name} ${yen(t.amt)}`):["貸し借りなし"]),"","＜内訳＞",
+    ...items.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).map(it=>`${(it.date||"").slice(5).replace("-","/")} ${it.what} ${yen(it.amount)}(${byId[it.payer]?.name})`)];
+  try{await navigator.clipboard.writeText(lines.join("\n"));toast("コピーしたよ",false)}catch(e){toast("コピーできなかった",false)}
+});
+
+resetForm();render();
+function setStatus(t){$("#status").textContent=t;$("#status").hidden=!t}
+(async()=>{
+  try{db=window.claude&&await window.claude.use("db")}catch(e){db=null}
+  if(!db){
+    useLocal=true;try{items=JSON.parse(localStorage.getItem("warikan3")||"[]")}catch(e){items=[]}
+    setStatus("この画面ではこの端末にだけ保存されるよ");render();return}
+  col=db.collection("payments");
+  const timer=setTimeout(()=>setStatus("データにつながらない…電波を確認してね"),10000);
+  col.onSnapshot(snap=>{
+    items=snap.docs.map(d=>({id:d.id,...d.data(),split:[...(d.data().split||[])]})).filter(x=>typeof x.amount==="number");
+    if(!snap.metadata.fromCache){clearTimeout(timer);setStatus("")}
+    render();
+  },err=>{clearTimeout(timer);setStatus("データを読み込めなかった");});
+})();
+}
+</script>
+</body>
+</html>
