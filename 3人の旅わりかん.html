@@ -67,6 +67,10 @@ background:var(--accent);color:#fff;box-shadow:0 4px 0 light-dark(#d9406c,#a83a5
 .item .what{font-weight:700;overflow-wrap:anywhere}
 .item .meta{grid-column:2/4;color:var(--soft);font-size:13px;margin-top:-4px}
 .item .yen{font-weight:900;font-size:17px}
+.acts{grid-column:2/4;display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.mini{font:inherit;font-weight:700;font-size:14px;min-height:40px;min-width:64px;padding:6px 14px;border-radius:999px;border:2px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.mini.del{color:var(--accent);border-color:var(--accent)}
+dialog h3{margin:0 0 8px;font-size:18px}dialog p{margin:0 0 16px;color:var(--soft)}
 .empty{text-align:center;color:var(--soft);padding:24px 0}
 .status{font-size:13px;color:var(--soft);text-align:center;margin:-8px 0 16px}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:var(--bg);
@@ -125,6 +129,9 @@ dialog::backdrop{background:#3b243380}
     <div id="list"></div>
   </section>
 </div>
+
+<dialog id="confirm"><h3>このメモを削除する?</h3><p id="confirmMsg"></p>
+<div class="btns" style="margin-top:0"><button class="btn ghost" type="button" id="no" style="flex:1">やめる</button><button class="btn" type="button" id="yes">削除する</button></div></dialog>
 
 <div class="toast" id="toast" role="status"><span id="toastMsg"></span><button type="button" id="undo">元に戻す</button></div>
 
@@ -187,7 +194,8 @@ function renderList(){
     return `<div class="item" tabindex="0" role="button" data-id="${esc(it.id)}" aria-label="${esc(it.what)}を編集">
 <span class="who" style="background:${p.c}">${esc(p.name.slice(0,1))}</span>
 <span class="what">${esc(it.what)}</span><span class="yen">${yen(it.amount)}</span>
-<span class="meta">${it.date?esc(it.date.slice(5).replace("-","/"))+" ・ ":""}${esc(p.name)}が払った ・ ${esc(sp)}</span></div>`}).join("");
+<span class="meta">${it.date?esc(it.date.slice(5).replace("-","/"))+" ・ ":""}${esc(p.name)}が払った ・ ${esc(sp)}</span>
+<span class="acts"><button type="button" class="mini" data-edit="${esc(it.id)}">編集</button><button type="button" class="mini del" data-delete="${esc(it.id)}">削除</button></span></div>`}).join("");
 }
 
 function renderChips(){
@@ -227,18 +235,25 @@ $("#form").addEventListener("submit",async e=>{
   catch(er){$("#err").textContent=er&&er.code==="quota_exceeded"?"保存できる上限に達したみたい":"保存できなかった。もう一度試してね"}
 });
 $("#cancel").addEventListener("click",resetForm);
-$("#del").addEventListener("click",async()=>{
-  const it=items.find(x=>x.id===editId);if(!it)return;
-  lastDeleted={...it};try{await remove(it.id);resetForm();toast(`「${it.what}」を削除したよ`,true)}catch(e){$("#err").textContent="削除できなかった"}
-});
+let pendingDel=null;
+function askDelete(id){const it=items.find(x=>x.id===id);if(!it)return;pendingDel=it;
+  $("#confirmMsg").textContent=`「${it.what}」${yen(it.amount)}(${byId[it.payer]?.name||""}が払った)`;
+  try{$("#confirm").showModal()}catch(e){doDelete()}}
+async function doDelete(){const it=pendingDel;pendingDel=null;try{$("#confirm").close()}catch(e){}if(!it)return;
+  lastDeleted={...it};try{await remove(it.id);if(editId===it.id)resetForm();toast(`「${it.what}」を削除したよ`,true)}catch(e){toast("削除できなかった",false)}}
+$("#del").addEventListener("click",()=>askDelete(editId));
+$("#yes").addEventListener("click",doDelete);
+$("#no").addEventListener("click",()=>{pendingDel=null;$("#confirm").close()});
 $("#undo").addEventListener("click",async()=>{if(!lastDeleted)return;const it=lastDeleted;lastDeleted=null;try{await put(it);toast("元に戻したよ",false)}catch(e){}});
 document.addEventListener("click",e=>{
   const p=e.target.closest("[data-p]");if(p){payer=p.dataset.p;renderChips();return}
   const s=e.target.closest("[data-s]");if(s){const id=s.dataset.s;split.has(id)?split.delete(id):split.add(id);renderChips();return}
   const f=e.target.closest("[data-f]");if(f){filter=f.dataset.f;renderList();return}
+  const d=e.target.closest("[data-delete]");if(d){askDelete(d.dataset.delete);return}
+  const ed=e.target.closest("[data-edit]");if(ed){const x=items.find(i=>i.id===ed.dataset.edit);if(x)loadForm(x);return}
   const it=e.target.closest(".item");if(it){const x=items.find(i=>i.id===it.dataset.id);if(x)loadForm(x)}
 });
-document.addEventListener("keydown",e=>{const it=e.target.closest&&e.target.closest(".item");if(it&&(e.key==="Enter"||e.key===" ")){e.preventDefault();it.click()}});
+document.addEventListener("keydown",e=>{const it=e.target.classList&&e.target.classList.contains("item")?e.target:null;if(it&&(e.key==="Enter"||e.key===" ")){e.preventDefault();it.click()}});
 $("#copy").addEventListener("click",async()=>{
   const r=calc();
   const lines=["【旅のわりかん】","合計 "+yen(r.total),...P.map(p=>`${p.name}:払った ${yen(r.paid[p.id])} / 負担 ${yen(r.share[p.id])}`),"",
